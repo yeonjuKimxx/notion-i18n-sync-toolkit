@@ -1,7 +1,7 @@
 /**
  * clear 명령어: Notion 데이터베이스 클리어
  */
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs'
+import { writeFileSync, mkdirSync, existsSync } from 'fs'
 import { join, resolve } from 'path'
 import chalk from 'chalk'
 import { loadConfig } from '../utils/config-loader.js'
@@ -191,10 +191,68 @@ async function clearDatabase(config, databaseId, domain, dbType) {
 }
 
 async function backupNotionData(config, databaseId, domain, dbType) {
-	console.log(chalk.gray(`   📦 Backing up ${domain}...`))
+	console.log(chalk.gray(`   📦 Backing up ${domain} from Notion...`))
 
-	// 로컬 messages 폴더에서 JSON 파일 복사
-	const sourceDir = resolve(process.cwd(), config.messagesDir, domain)
+	// Notion에서 최신 데이터 가져오기
+	const data = {}
+	let hasMore = true
+	let cursor = undefined
+
+	while (hasMore) {
+		const filter =
+			dbType === 'unified'
+				? {
+						property: config.columns?.domain || 'Domain',
+						select: {
+							equals: domain,
+						},
+				  }
+				: undefined
+
+		const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}/query`, {
+			method: 'POST',
+			headers: {
+				Authorization: `Bearer ${config.notionApiKey}`,
+				'Notion-Version': '2022-06-28',
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				start_cursor: cursor,
+				page_size: 100,
+				...(filter && { filter }),
+			}),
+		})
+
+		const result = await response.json()
+
+		if (!response.ok) {
+			throw new Error(`Failed to fetch backup data: ${result.message}`)
+		}
+
+		for (const page of result.results) {
+			const props = page.properties
+			const key = props.Key?.title?.[0]?.plain_text
+
+			if (!key) continue
+
+			// 각 언어별로 데이터 수집
+			for (const lang of config.languages) {
+				const columnName = lang.column
+				const value = props[columnName]?.rich_text?.[0]?.plain_text || ''
+
+				if (!data[lang.code]) {
+					data[lang.code] = {}
+				}
+
+				data[lang.code][key] = value
+			}
+		}
+
+		hasMore = result.has_more
+		cursor = result.next_cursor
+	}
+
+	// messages/notion_backups/{domain}/{lang}.json 형태로 저장
 	const backupDir = resolve(process.cwd(), config.messagesDir, 'notion_backups', domain)
 
 	if (!existsSync(backupDir)) {
@@ -203,17 +261,16 @@ async function backupNotionData(config, databaseId, domain, dbType) {
 
 	let savedFiles = 0
 	for (const lang of config.languages) {
-		const sourceFile = join(sourceDir, `${lang.code}.json`)
-		const backupFile = join(backupDir, `${lang.code}.json`)
+		const langData = data[lang.code] || {}
+		const filePath = join(backupDir, `${lang.code}.json`)
 
-		if (existsSync(sourceFile)) {
-			const content = readFileSync(sourceFile, 'utf-8')
-			writeFileSync(backupFile, content, 'utf-8')
-			savedFiles++
-		}
+		writeFileSync(filePath, JSON.stringify(langData, null, 2), 'utf-8')
+		savedFiles++
 	}
 
 	console.log(
-		chalk.green(`      ✓ Saved ${savedFiles} language files to ${config.messagesDir}/notion_backups/${domain}/`)
+		chalk.green(
+			`      ✓ Saved ${savedFiles} language files to ${config.messagesDir}/notion_backups/${domain}/`
+		)
 	)
 }
