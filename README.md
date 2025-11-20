@@ -207,12 +207,43 @@ Options:
   -c, --config <path>      설정 파일 경로
 ```
 
+### `check-db`
+
+Basic DB를 기준으로 도메인 DB 구조 검증
+
+```bash
+notion-i18n check-db [options]
+
+Options:
+  --auth                   auth DB 검증
+  --business               business DB 검증
+  --tournament             tournament DB 검증
+  --common                 common DB 검증
+  --all                    모든 도메인 DB 검증
+  -c, --config <path>      설정 파일 경로
+```
+
+**사용 시나리오:**
+1. Basic DB에 완벽한 컬럼 구조를 먼저 만듭니다 (Key, Domain, Order, EN, KO, ...)
+2. 새로운 도메인 DB를 만들 때, Basic DB를 복제하거나 수동으로 컬럼을 추가합니다
+3. `check-db` 명령어로 도메인 DB가 Basic DB와 동일한 구조인지 검증합니다
+
+**예시 출력:**
+```
+✅ auth: All columns match Basic DB!
+❌ common: Schema mismatch detected
+  Missing Columns:
+    - 생성자 (created_by)
+    - 생성 일시 (created_time)
+```
+
 ## ⚙️ 설정 파일 (notion-i18n.config.json)
 
 ```json
 {
   "projectName": "my-project",
   "notionApiKey": "${NOTION_API_KEY}",
+  "basicDatabase": "${NOTION_DB_BASIC}",
   "unifiedDatabase": "${NOTION_DB_UNIFIED}",
   "databases": {
     "auth": "${NOTION_DB_AUTH}",
@@ -244,6 +275,7 @@ Options:
 |------|------|------|
 | `projectName` | string | 프로젝트 이름 |
 | `notionApiKey` | string | Notion API 키 (환경 변수 사용 권장) |
+| `basicDatabase` | string | Basic DB ID (check-db 명령어용 표준 템플릿) |
 | `unifiedDatabase` | string | 통합 DB ID (선택사항) |
 | `databases` | object | 도메인별 DB ID (선택사항) |
 | `messagesDir` | string | 번역 파일 디렉토리 경로 |
