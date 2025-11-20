@@ -276,17 +276,17 @@ async function prepareUploadTasks(config, domain) {
 		}
 
 		// Status 결정
-		// - Not started: base 언어 외에 50% 이상 번역된 언어가 없음
-		// - In progress: 일부 언어 번역됨, 하지만 전부는 아님
-		// - Done: 모든 언어 100% 번역됨
+		// - 시작 전: base 언어 외에 번역된 언어가 없음
+		// - 진행 중: 일부 언어 번역됨, 하지만 전부는 아님
+		// - 완료: 모든 언어 100% 번역됨
 		const totalLanguages = config.languages.length
 		const substantiallyTranslated = translatedCount - 1 // base 제외
 
-		let status = 'In progress'
+		let status = '진행 중'
 		if (translatedCount === totalLanguages) {
-			status = 'Done'
+			status = '완료'
 		} else if (substantiallyTranslated === 0 || translatedCount <= 1) {
-			status = 'Not started'
+			status = '시작 전'
 		}
 
 		tasks.push({ key, order, translations, status })
