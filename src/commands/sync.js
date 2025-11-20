@@ -1,5 +1,5 @@
 /**
- * sync-keys 명령어: Order를 유지하면서 번역 값만 업데이트
+ * sync 명령어: Order를 유지하면서 번역 값만 업데이트
  */
 import { readFileSync, existsSync } from 'fs'
 import { resolve } from 'path'
@@ -8,7 +8,7 @@ import { loadConfig } from '../utils/config-loader.js'
 import { flatten } from '../utils/flatten.js'
 import { retryOnConflict } from '../utils/retry.js'
 
-export async function syncKeysCommand(options) {
+export async function syncCommand(options) {
 	const config = loadConfig(options.config)
 
 	console.log(chalk.green('🔄 Syncing translation values (preserving Order)...\n'))
@@ -38,13 +38,11 @@ export async function syncKeysCommand(options) {
 		if (selectedDomains.length === 0) {
 			console.log(chalk.yellow('Usage:'))
 			console.log(
-				'  notion-i18n sync-keys --all              # Sync all domains to both individual & unified DBs'
+				'  notion-i18n sync --all              # Sync all domains to both individual & unified DBs'
 			)
-			console.log('  notion-i18n sync-keys --unified          # Sync all domains to unified DB only')
-			console.log('  notion-i18n sync-keys --auth             # Sync auth to individual DB only')
-			console.log(
-				'  notion-i18n sync-keys --common --auth    # Sync common and auth to individual DBs'
-			)
+			console.log('  notion-i18n sync --unified          # Sync all domains to unified DB only')
+			console.log('  notion-i18n sync --auth             # Sync auth to individual DB only')
+			console.log('  notion-i18n sync --common --auth    # Sync common and auth to individual DBs')
 			console.log(chalk.cyan('\nAvailable domains:'), config.domains.join(', '))
 			return
 		}

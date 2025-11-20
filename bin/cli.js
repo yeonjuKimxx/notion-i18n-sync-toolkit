@@ -95,9 +95,9 @@ program
 		}
 	})
 
-// sync-keys 명령어
+// sync 명령어
 program
-	.command('sync-keys')
+	.command('sync')
 	.description('Order 유지하면서 번역 값만 업데이트 (기존 키만)')
 	.option('--auth', 'auth 도메인 동기화 (개별 DB)')
 	.option('--business', 'business 도메인 동기화 (개별 DB)')
@@ -109,8 +109,8 @@ program
 	.action(async (options) => {
 		console.log(chalk.green('🔄 번역 값 동기화 중...'))
 		try {
-			const { syncKeysCommand } = await import('../src/commands/sync-keys.js')
-			await syncKeysCommand(options)
+			const { syncCommand } = await import('../src/commands/sync.js')
+			await syncCommand(options)
 		} catch (error) {
 			console.error(chalk.red('❌ 동기화 실패:'), error.message)
 			process.exit(1)
