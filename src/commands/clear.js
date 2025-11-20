@@ -1,8 +1,11 @@
 /**
  * clear 명령어: Notion 데이터베이스 클리어
  */
+import { writeFileSync, mkdirSync, existsSync } from 'fs'
+import { join, resolve } from 'path'
 import chalk from 'chalk'
 import { loadConfig } from '../utils/config-loader.js'
+import { unflatten } from '../utils/flatten.js'
 
 export async function clearCommand(options) {
 	const config = loadConfig(options.config)
@@ -70,6 +73,23 @@ export async function clearCommand(options) {
 		)
 		return
 	}
+
+	// 백업 실행 (삭제 전)
+	console.log(chalk.cyan('\n💾 Backing up Notion data before clearing...\n'))
+
+	for (const target of targets) {
+		if (target.type === 'unified') {
+			// 통합 DB는 모든 도메인 백업
+			for (const domain of config.domains) {
+				await backupNotionData(config, target.dbId, domain, 'unified')
+			}
+		} else {
+			// 개별 DB는 해당 도메인만 백업
+			await backupNotionData(config, target.dbId, target.domain, 'individual')
+		}
+	}
+
+	console.log(chalk.green('✅ Backup complete!\n'))
 
 	// 클리어 실행
 	let totalDeleted = 0
@@ -169,4 +189,88 @@ async function clearDatabase(config, databaseId, domain, dbType) {
 
 	console.log('') // newline
 	return deleted
+}
+
+async function backupNotionData(config, databaseId, domain, dbType) {
+	console.log(chalk.gray(`   📦 Backing up ${domain}...`))
+
+	// Notion에서 데이터 가져오기
+	const data = {}
+	let hasMore = true
+	let cursor = undefined
+
+	while (hasMore) {
+		const filter =
+			dbType === 'unified'
+				? {
+						property: config.columns?.domain || 'Domain',
+						select: {
+							equals: domain,
+						},
+				  }
+				: undefined
+
+		const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}/query`, {
+			method: 'POST',
+			headers: {
+				Authorization: `Bearer ${config.notionApiKey}`,
+				'Notion-Version': '2022-06-28',
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				start_cursor: cursor,
+				page_size: 100,
+				...(filter && { filter }),
+			}),
+		})
+
+		const result = await response.json()
+
+		if (!response.ok) {
+			throw new Error(`Failed to fetch backup data: ${result.message}`)
+		}
+
+		for (const page of result.results) {
+			const props = page.properties
+			const key = props.Key?.title?.[0]?.plain_text
+
+			if (!key) continue
+
+			// 각 언어별로 데이터 수집
+			for (const lang of config.languages) {
+				const columnName = lang.column
+				const value = props[columnName]?.rich_text?.[0]?.plain_text || ''
+
+				if (!data[lang.code]) {
+					data[lang.code] = {}
+				}
+
+				data[lang.code][key] = value
+			}
+		}
+
+		hasMore = result.has_more
+		cursor = result.next_cursor
+	}
+
+	// notion_backup/{domain}/{lang}.json 형태로 저장
+	const backupDir = resolve(process.cwd(), 'notion_backup', domain)
+
+	if (!existsSync(backupDir)) {
+		mkdirSync(backupDir, { recursive: true })
+	}
+
+	let savedFiles = 0
+	for (const lang of config.languages) {
+		const langData = data[lang.code] || {}
+		const nestedData = unflatten(langData)
+		const filePath = join(backupDir, `${lang.code}.json`)
+
+		writeFileSync(filePath, JSON.stringify(nestedData, null, 2), 'utf-8')
+		savedFiles++
+	}
+
+	console.log(
+		chalk.green(`      ✓ Saved ${savedFiles} language files to notion_backup/${domain}/`)
+	)
 }
