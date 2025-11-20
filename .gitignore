@@ -6,8 +6,8 @@ node_modules/
 .env.local
 .env.*.local
 
-# Config (user-specific)
-notion-i18n.config.json
+# Config (user-specific, but not templates)
+/notion-i18n.config.json
 
 # OS
 .DS_Store

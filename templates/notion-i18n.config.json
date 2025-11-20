@@ -1,0 +1,50 @@
+{
+  "projectName": "my-project",
+  "projectType": "nextjs",
+
+  "notionApiKey": "${NOTION_API_KEY}",
+
+  "unifiedDatabase": "${NOTION_DB_UNIFIED}",
+
+  "databases": {
+    "common": "${NOTION_DB_COMMON}",
+    "auth": "${NOTION_DB_AUTH}",
+    "business": "${NOTION_DB_BUSINESS}",
+    "tournament": "${NOTION_DB_TOURNAMENT}"
+  },
+
+  "messagesDir": "./messages",
+
+  "baseLocale": "en",
+
+  "languages": [
+    { "code": "en", "column": "EN", "name": "English" },
+    { "code": "ko", "column": "KO", "name": "Korean" },
+    { "code": "ja", "column": "JA", "name": "Japanese" },
+    { "code": "de", "column": "DE", "name": "German" },
+    { "code": "fr", "column": "FR", "name": "French" },
+    { "code": "es", "column": "ES", "name": "Spanish" },
+    { "code": "id", "column": "ID", "name": "Indonesian" },
+    { "code": "ms", "column": "MS", "name": "Malay" },
+    { "code": "th", "column": "TH", "name": "Thai" },
+    { "code": "vi", "column": "VI", "name": "Vietnamese" },
+    { "code": "zh-tw", "column": "ZH-TW", "name": "Traditional Chinese" },
+    { "code": "zh-cn", "column": "ZH-CN", "name": "Simplified Chinese" },
+    { "code": "mn", "column": "MN", "name": "Mongolian" }
+  ],
+
+  "domains": ["common", "auth", "business", "tournament"],
+
+  "columns": {
+    "key": "Key",
+    "domain": "Domain",
+    "order": "Order"
+  },
+
+  "options": {
+    "batchSize": 5,
+    "retryAttempts": 5,
+    "retryDelay": 1000,
+    "preserveEmptyValues": true
+  }
+}
