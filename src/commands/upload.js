@@ -250,6 +250,7 @@ async function prepareUploadTasks(config, domain) {
 	let order = 0
 	for (const [key, _] of Object.entries(flatMessages)) {
 		const translations = {}
+		let translatedCount = 0
 
 		for (const lang of config.languages) {
 			try {
@@ -262,13 +263,33 @@ async function prepareUploadTasks(config, domain) {
 
 				const messages = JSON.parse(readFileSync(langPath, 'utf-8'))
 				const flatted = flatten(messages)
-				translations[lang.column] = flatted[key] || ''
+				const value = flatted[key] || ''
+				translations[lang.column] = value
+
+				// 번역된 언어 카운트 (빈 값 제외)
+				if (value && value.trim() !== '') {
+					translatedCount++
+				}
 			} catch (e) {
 				translations[lang.column] = ''
 			}
 		}
 
-		tasks.push({ key, order, translations })
+		// Status 결정
+		// - Not started: base 언어 외에 50% 이상 번역된 언어가 없음
+		// - In progress: 일부 언어 번역됨, 하지만 전부는 아님
+		// - Done: 모든 언어 100% 번역됨
+		const totalLanguages = config.languages.length
+		const substantiallyTranslated = translatedCount - 1 // base 제외
+
+		let status = 'In progress'
+		if (translatedCount === totalLanguages) {
+			status = 'Done'
+		} else if (substantiallyTranslated === 0 || translatedCount <= 1) {
+			status = 'Not started'
+		}
+
+		tasks.push({ key, order, translations, status })
 		order++
 	}
 
@@ -277,12 +298,13 @@ async function prepareUploadTasks(config, domain) {
 
 // 페이지 생성
 async function createPage(config, databaseId, domain, task) {
-	const { key, order, translations } = task
+	const { key, order, translations, status } = task
 
 	const properties = {
 		Key: { title: [{ text: { content: key } }] },
 		[config.columns?.order || 'Order']: { number: order },
 		[config.columns?.domain || 'Domain']: { select: { name: domain } },
+		Status: { status: { name: status } },
 	}
 
 	for (const [column, text] of Object.entries(translations)) {
@@ -315,11 +337,12 @@ async function createPage(config, databaseId, domain, task) {
 
 // 페이지 업데이트
 async function updatePage(config, pageId, domain, task) {
-	const { order, translations } = task
+	const { order, translations, status } = task
 
 	const properties = {
 		[config.columns?.order || 'Order']: { number: order },
 		[config.columns?.domain || 'Domain']: { select: { name: domain } },
+		Status: { status: { name: status } },
 	}
 
 	for (const [column, text] of Object.entries(translations)) {
