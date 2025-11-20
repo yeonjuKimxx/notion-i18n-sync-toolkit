@@ -252,8 +252,8 @@ async function backupNotionData(config, databaseId, domain, dbType) {
 		cursor = result.next_cursor
 	}
 
-	// messages/notion_backups/{domain}/{lang}.json 형태로 저장
-	const backupDir = resolve(process.cwd(), config.messagesDir, 'notion_backups', domain)
+	// messages/_notion_backups/{domain}/{lang}.json 형태로 저장
+	const backupDir = resolve(process.cwd(), config.messagesDir, '_notion_backups', domain)
 
 	if (!existsSync(backupDir)) {
 		mkdirSync(backupDir, { recursive: true })
@@ -270,7 +270,7 @@ async function backupNotionData(config, databaseId, domain, dbType) {
 
 	console.log(
 		chalk.green(
-			`      ✓ Saved ${savedFiles} language files to ${config.messagesDir}/notion_backups/${domain}/`
+			`      ✓ Saved ${savedFiles} language files to ${config.messagesDir}/_notion_backups/${domain}/`
 		)
 	)
 }
