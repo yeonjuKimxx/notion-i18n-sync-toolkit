@@ -27,3 +27,26 @@ export async function retryOnConflict(fn, maxRetries = 5, delayMs = 1000) {
 	}
 	throw new Error('Retry failed')
 }
+
+/**
+ * Retry fetch with exponential backoff
+ */
+export async function retryFetch(url, options, maxRetries = 3, delayMs = 1000) {
+	for (let i = 0; i < maxRetries; i++) {
+		try {
+			const response = await fetch(url, options)
+			return response
+		} catch (error) {
+			const isLastAttempt = i === maxRetries - 1
+
+			if (isLastAttempt) {
+				throw error
+			}
+
+			// Exponential backoff
+			const delay = delayMs * Math.pow(2, i)
+			await new Promise((resolve) => setTimeout(resolve, delay))
+		}
+	}
+	throw new Error('Retry failed')
+}
