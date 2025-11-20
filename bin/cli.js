@@ -172,6 +172,27 @@ program
 		}
 	})
 
+// check-db 명령어 (DB 구조 검증)
+program
+	.command('check-db')
+	.description('Basic DB를 기준으로 도메인 DB 구조 검증')
+	.option('--auth', 'auth DB 검증')
+	.option('--business', 'business DB 검증')
+	.option('--tournament', 'tournament DB 검증')
+	.option('--common', 'common DB 검증')
+	.option('--all', '모든 도메인 DB 검증')
+	.option('-c, --config <path>', '설정 파일 경로', './notion-i18n.config.json')
+	.action(async (options) => {
+		console.log(chalk.green('🔍 데이터베이스 구조 검증 중...'))
+		try {
+			const { checkDbCommand } = await import('../src/commands/check-db.js')
+			await checkDbCommand(options)
+		} catch (error) {
+			console.error(chalk.red('❌ DB 검증 실패:'), error.message)
+			process.exit(1)
+		}
+	})
+
 // 에러 핸들링
 program.exitOverride()
 

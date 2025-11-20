@@ -4,6 +4,7 @@
 
   "notionApiKey": "${NOTION_API_KEY}",
 
+  "basicDatabase": "${NOTION_DB_BASIC}",
   "unifiedDatabase": "${NOTION_DB_UNIFIED}",
 
   "databases": {
