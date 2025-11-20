@@ -95,6 +95,28 @@ program
 		}
 	})
 
+// sync-keys 명령어
+program
+	.command('sync-keys')
+	.description('Order 유지하면서 번역 값만 업데이트 (기존 키만)')
+	.option('--auth', 'auth 도메인 동기화 (개별 DB)')
+	.option('--business', 'business 도메인 동기화 (개별 DB)')
+	.option('--tournament', 'tournament 도메인 동기화 (개별 DB)')
+	.option('--common', 'common 도메인 동기화 (개별 DB)')
+	.option('--unified', '통합 DB에 모든 도메인 동기화')
+	.option('--all', '모든 DB에 모든 도메인 동기화')
+	.option('-c, --config <path>', '설정 파일 경로', './notion-i18n.config.json')
+	.action(async (options) => {
+		console.log(chalk.green('🔄 번역 값 동기화 중...'))
+		try {
+			const { syncKeysCommand } = await import('../src/commands/sync-keys.js')
+			await syncKeysCommand(options)
+		} catch (error) {
+			console.error(chalk.red('❌ 동기화 실패:'), error.message)
+			process.exit(1)
+		}
+	})
+
 // validate 명령어
 program
 	.command('validate')
