@@ -77,10 +77,21 @@ export async function statusCommand(options) {
 		}
 
 		// 상태 결정:
-		// - 시작 전: base 언어만 100% (또는 1개 언어만 100%)
+		// - 시작 전: base 언어만 번역되어 있음 (다른 언어들이 대부분 0%~10% 미만)
 		// - 완료: 모든 언어 100%
 		// - 진행 중: 그 외
 		const totalLanguages = config.languages.length
+
+		// base 언어 외에 50% 이상 번역된 언어 개수 확인
+		let substantiallyTranslatedLangs = 0
+		for (const lang of config.languages) {
+			if (lang.code === config.baseLocale) continue // base 제외
+			const langStat = domainStats.languages[lang.code]
+			if (langStat && langStat.percentage >= 50) {
+				substantiallyTranslatedLangs++
+			}
+		}
+
 		let status = 'in_progress'
 		let statusIcon = '🔄'
 		let statusText = '진행 중'
@@ -91,7 +102,8 @@ export async function statusCommand(options) {
 			statusIcon = '✅'
 			statusText = '완료'
 			statusColor = chalk.green
-		} else if (translatedLanguages <= 1) {
+		} else if (substantiallyTranslatedLangs === 0) {
+			// base 언어 외에 50% 이상 번역된 언어가 없으면 시작 전
 			status = 'not_started'
 			statusIcon = '⏸️'
 			statusText = '시작 전'
